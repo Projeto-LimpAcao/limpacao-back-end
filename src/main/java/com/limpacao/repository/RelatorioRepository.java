@@ -9,10 +9,7 @@ import com.limpacao.entity.Relatorio;
 public interface RelatorioRepository extends JpaRepository<Relatorio, Long> {
 
     List<Relatorio> findByUsuarioId(Long usuarioId);
-
     List<Relatorio> findByStatus(String status);
-
     List<Relatorio> findByUrgencia(String urgencia);
-
     List<Relatorio> findByTituloContainingIgnoreCaseOrLocalizacaoContainingIgnoreCase(String titulo, String localizacao);
 }

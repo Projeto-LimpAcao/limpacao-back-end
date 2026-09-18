@@ -1,7 +1,7 @@
 package com.limpacao.enums;
 
 public enum StatusRelatorio {
-    PENDING,
-    IN_PROGRESS,
-    RESOLVED
+    PENDENTE,
+    EM_ANDAMENTO,
+    RESOLVIDO
 }

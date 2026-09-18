@@ -1,7 +1,7 @@
 package com.limpacao.enums;
 
 public enum Urgencia {
-    LOW,
-    MEDIUM,
-    HIGH
+    BAIXA,
+    MEDIA,
+    ALTA
 }
