@@ -1,7 +1,5 @@
 package com.limpacao.service;
 
-import java.util.NoSuchElementException;
-
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -37,12 +35,12 @@ public class ParticipacaoService {
 
     @Transactional(readOnly = true)
     public long contarParticipantes(Long relatorioId) {
-        return repository.countByRelatorioIdAndTipoParticipacao(relatorioId, TipoParticipacao.PARTICIPATING);
+        return repository.countByRelatorioIdAndTipoParticipacao(relatorioId, TipoParticipacao.PARTICIPANDO);
     }
 
     @Transactional(readOnly = true)
     public long contarAjudantes(Long relatorioId) {
-        return repository.countByRelatorioIdAndTipoParticipacao(relatorioId, TipoParticipacao.HELPING);
+        return repository.countByRelatorioIdAndTipoParticipacao(relatorioId, TipoParticipacao.AJUDANDO);
     }
 
     @Transactional(readOnly = true)

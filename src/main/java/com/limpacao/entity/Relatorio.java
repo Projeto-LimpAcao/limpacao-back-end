@@ -39,10 +39,10 @@ public class Relatorio {
     @Column(nullable = false, length = 255)
     private String localizacao;
 
-    @Column(precision = 10, scale = 8)
+    @Column
     private Double latitude;
 
-    @Column(precision = 11, scale = 8)
+    @Column
     private Double longitude;
 
     @Enumerated(EnumType.STRING)
@@ -94,7 +94,7 @@ public class Relatorio {
         this.criadoEm = LocalDateTime.now();
         this.atualizadoEm = LocalDateTime.now();
         if (this.status == null) {
-            this.status = StatusRelatorio.PENDING;
+            this.status = StatusRelatorio.PENDENTE;
         }
         if (this.data == null) {
             this.data = LocalDate.now();

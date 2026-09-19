@@ -3,6 +3,7 @@ package com.limpacao.service;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
@@ -20,6 +21,7 @@ public class UsuarioService {
 
     private final UsuarioRepository repository;
     private final UsuarioMapper mapper;
+    private final PasswordEncoder passwordEncoder;
 
     @Transactional(readOnly = true)
     public List<UsuarioResponseDTO> listar() {
@@ -39,6 +41,7 @@ public class UsuarioService {
             throw new IllegalArgumentException("Email ja cadastrado");
         }
         Usuario usuario = mapper.toEntity(dto);
+        usuario.setSenha(passwordEncoder.encode(dto.senha()));
         return mapper.toDTO(repository.save(usuario));
     }
 
@@ -48,7 +51,7 @@ public class UsuarioService {
                 .orElseThrow(() -> new NoSuchElementException("Usuario nao encontrado com id: " + id));
         existente.setNome(dto.nome());
         existente.setEmail(dto.email());
-        existente.setSenha(dto.senha());
+        existente.setSenha(passwordEncoder.encode(dto.senha()));
         return mapper.toDTO(repository.save(existente));
     }
 
