@@ -71,7 +71,7 @@ public class Relatorio {
     @Column(nullable = false)
     private LocalDate data;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String imagem;
 
     @Column(nullable = false, columnDefinition = "TEXT")
