@@ -16,6 +16,11 @@ public class RelatorioMapper {
         return Relatorio.builder()
                 .titulo(dto.titulo())
                 .localizacao(dto.localizacao())
+                .cep(dto.cep())
+                .rua(dto.rua())
+                .cidade(dto.cidade())
+                .estado(dto.estado())
+                .numero(dto.numero())
                 .latitude(dto.latitude())
                 .longitude(dto.longitude())
                 .urgencia(dto.urgencia())
@@ -34,6 +39,11 @@ public class RelatorioMapper {
                 entity.getId(),
                 entity.getTitulo(),
                 entity.getLocalizacao(),
+                entity.getCep(),
+                entity.getRua(),
+                entity.getCidade(),
+                entity.getEstado(),
+                entity.getNumero(),
                 entity.getLatitude(),
                 entity.getLongitude(),
                 entity.getUrgencia(),
