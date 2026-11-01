@@ -7,6 +7,7 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.limpacao.dto.MensagemChatRequestDTO;
 import com.limpacao.dto.MensagemChatResponseDTO;
+import com.limpacao.dto.MensagemChatContagemDTO;
 import com.limpacao.entity.MensagemChat;
 import com.limpacao.mapper.MensagemChatMapper;
 import com.limpacao.repository.MensagemChatRepository;
@@ -25,9 +26,23 @@ public class MensagemChatService {
         return mapper.toDTOList(repository.findByRelatorioIdOrderByCriadoEm(relatorioId));
     }
 
+    @Transactional(readOnly = true)
+    public List<MensagemChatContagemDTO> contarPorRelatorio() {
+        return repository.contarPorRelatorio();
+    }
+
     @Transactional
     public MensagemChatResponseDTO salvar(MensagemChatRequestDTO dto, Long relatorioId) {
         MensagemChat mensagem = mapper.toEntity(dto, relatorioId);
+        if (dto.respostaAId() != null) {
+            MensagemChat mensagemRespondida = repository.findById(dto.respostaAId())
+                    .filter(item -> item.getRelatorioId().equals(relatorioId))
+                    .orElseThrow(() -> new IllegalArgumentException(
+                            "A mensagem respondida não pertence a este reporte."));
+            mensagem.setRespostaAId(mensagemRespondida.getId());
+            mensagem.setRespostaAAutor(mensagemRespondida.getAutor());
+            mensagem.setRespostaATexto(mensagemRespondida.getTexto());
+        }
         return mapper.toDTO(repository.save(mensagem));
     }
 }

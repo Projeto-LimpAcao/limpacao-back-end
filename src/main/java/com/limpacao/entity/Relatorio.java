@@ -39,6 +39,21 @@ public class Relatorio {
     @Column(nullable = false, length = 255)
     private String localizacao;
 
+    @Column(length = 10)
+    private String cep;
+
+    @Column(length = 255)
+    private String rua;
+
+    @Column(length = 255)
+    private String cidade;
+
+    @Column(length = 100)
+    private String estado;
+
+    @Column(length = 50)
+    private String numero;
+
     @Column
     private Double latitude;
 
@@ -56,7 +71,7 @@ public class Relatorio {
     @Column(nullable = false)
     private LocalDate data;
 
-    @Column(columnDefinition = "TEXT")
+    @Column(columnDefinition = "LONGTEXT")
     private String imagem;
 
     @Column(nullable = false, columnDefinition = "TEXT")

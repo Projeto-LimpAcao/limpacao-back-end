@@ -3,6 +3,7 @@ package com.limpacao.controller;
 import java.net.URI;
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -41,14 +42,21 @@ public class RelatorioController {
         return ResponseEntity.ok(service.listar());
     }
 
+    @GetMapping("/meus")
+    public ResponseEntity<List<RelatorioResponseDTO>> listarMeus(Authentication authentication) {
+        return ResponseEntity.ok(service.listarPorEmailUsuario(authentication.getName()));
+    }
+
     @GetMapping("/{id}")
     public ResponseEntity<RelatorioResponseDTO> buscarPorId(@PathVariable Long id) {
         return ResponseEntity.ok(service.buscarPorId(id));
     }
 
     @PostMapping
-    public ResponseEntity<RelatorioResponseDTO> salvar(@RequestBody RelatorioRequestDTO dto) {
-        RelatorioResponseDTO criado = service.salvar(dto);
+    public ResponseEntity<RelatorioResponseDTO> salvar(
+            @RequestBody RelatorioRequestDTO dto,
+            Authentication authentication) {
+        RelatorioResponseDTO criado = service.salvar(dto, authentication.getName());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(criado.id()).toUri();
         return ResponseEntity.created(location).body(criado);

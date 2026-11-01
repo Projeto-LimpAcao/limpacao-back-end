@@ -6,6 +6,11 @@ import com.limpacao.enums.Urgencia;
 public record RelatorioRequestDTO(
     String titulo,
     String localizacao,
+    String cep,
+    String rua,
+    String cidade,
+    String estado,
+    String numero,
     Double latitude,
     Double longitude,
     Urgencia urgencia,

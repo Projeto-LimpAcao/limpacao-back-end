@@ -17,6 +17,7 @@ public class MensagemChatMapper {
                 .relatorioId(relatorioId)
                 .autor(dto.autor())
                 .texto(dto.texto())
+                .respostaAId(dto.respostaAId())
                 .build();
     }
 
@@ -27,7 +28,10 @@ public class MensagemChatMapper {
                 entity.getRelatorioId(),
                 entity.getAutor(),
                 entity.getTexto(),
-                entity.getCriadoEm());
+                entity.getCriadoEm(),
+                entity.getRespostaAId(),
+                entity.getRespostaAAutor(),
+                entity.getRespostaATexto());
     }
 
     public List<MensagemChatResponseDTO> toDTOList(List<MensagemChat> entities) {
