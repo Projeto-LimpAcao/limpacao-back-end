@@ -11,6 +11,7 @@ import com.limpacao.dto.RelatorioResponseDTO;
 import com.limpacao.entity.Relatorio;
 import com.limpacao.mapper.RelatorioMapper;
 import com.limpacao.repository.RelatorioRepository;
+import com.limpacao.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
 
@@ -19,6 +20,7 @@ import lombok.RequiredArgsConstructor;
 public class RelatorioService {
 
     private final RelatorioRepository repository;
+    private final UsuarioRepository usuarioRepository;
     private final RelatorioMapper mapper;
 
     @Transactional(readOnly = true)
@@ -39,13 +41,24 @@ public class RelatorioService {
     }
 
     @Transactional(readOnly = true)
+    public List<RelatorioResponseDTO> listarPorEmailUsuario(String email) {
+        var usuario = usuarioRepository.findByEmail(email)
+                .orElseThrow(() -> new NoSuchElementException("Usuario autenticado nao encontrado."));
+        return mapper.toDTOList(repository.findByUsuarioId(usuario.getId()));
+    }
+
+    @Transactional(readOnly = true)
     public List<RelatorioResponseDTO> buscarPorTermo(String termo) {
         return mapper.toDTOList(repository.findByTituloContainingIgnoreCaseOrLocalizacaoContainingIgnoreCase(termo, termo));
     }
 
     @Transactional
-    public RelatorioResponseDTO salvar(RelatorioRequestDTO dto) {
+    public RelatorioResponseDTO salvar(RelatorioRequestDTO dto, String emailUsuario) {
+        var usuario = usuarioRepository.findByEmail(emailUsuario)
+                .orElseThrow(() -> new NoSuchElementException("Usuario autenticado nao encontrado."));
         Relatorio relatorio = mapper.toEntity(dto);
+        relatorio.setUsuarioId(usuario.getId());
+        relatorio.setAutor(usuario.getNome());
         return mapper.toDTO(repository.save(relatorio));
     }
 
