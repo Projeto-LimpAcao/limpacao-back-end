@@ -2,6 +2,7 @@ package com.limpacao.dto;
 
 public record MensagemChatRequestDTO(
     String autor,
-    String texto
+    String texto,
+    Long respostaAId
 ) {
 }
