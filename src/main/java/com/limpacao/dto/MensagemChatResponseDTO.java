@@ -7,6 +7,9 @@ public record MensagemChatResponseDTO(
     Long relatorioId,
     String autor,
     String texto,
-    LocalDateTime criadoEm
+    LocalDateTime criadoEm,
+    Long respostaAId,
+    String respostaAAutor,
+    String respostaATexto
 ) {
 }

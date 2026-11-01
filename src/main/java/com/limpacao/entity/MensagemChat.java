@@ -36,6 +36,15 @@ public class MensagemChat {
     @Column(nullable = false, columnDefinition = "TEXT")
     private String texto;
 
+    @Column(name = "resposta_a_id")
+    private Long respostaAId;
+
+    @Column(name = "resposta_a_autor", length = 255)
+    private String respostaAAutor;
+
+    @Column(name = "resposta_a_texto", columnDefinition = "TEXT")
+    private String respostaATexto;
+
     @Column(name = "criado_em")
     private LocalDateTime criadoEm;
 
