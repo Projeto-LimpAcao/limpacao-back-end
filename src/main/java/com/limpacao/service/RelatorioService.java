@@ -56,6 +56,11 @@ public class RelatorioService {
 
         if (dto.titulo() != null) existente.setTitulo(dto.titulo());
         if (dto.localizacao() != null) existente.setLocalizacao(dto.localizacao());
+        if (dto.cep() != null) existente.setCep(dto.cep());
+        if (dto.rua() != null) existente.setRua(dto.rua());
+        if (dto.cidade() != null) existente.setCidade(dto.cidade());
+        if (dto.estado() != null) existente.setEstado(dto.estado());
+        if (dto.numero() != null) existente.setNumero(dto.numero());
         if (dto.latitude() != null) existente.setLatitude(dto.latitude());
         if (dto.longitude() != null) existente.setLongitude(dto.longitude());
         if (dto.urgencia() != null) existente.setUrgencia(dto.urgencia());
