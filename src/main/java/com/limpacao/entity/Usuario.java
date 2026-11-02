@@ -36,6 +36,14 @@ public class Usuario {
     @Column(nullable = false)
     private String senha;
 
+    @Column(name = "paleta_tema", nullable = false, length = 20)
+    @Builder.Default
+    private String paletaTema = "verde";
+
+    @Column(name = "modo_escuro", nullable = false)
+    @Builder.Default
+    private boolean modoEscuro = false;
+
     @Column(name = "criado_em")
     private LocalDateTime criadoEm;
 

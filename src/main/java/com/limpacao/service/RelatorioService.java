@@ -3,8 +3,10 @@ package com.limpacao.service;
 import java.util.List;
 import java.util.NoSuchElementException;
 
+import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.server.ResponseStatusException;
 
 import com.limpacao.dto.RelatorioRequestDTO;
 import com.limpacao.dto.RelatorioResponseDTO;
@@ -54,12 +56,38 @@ public class RelatorioService {
 
     @Transactional
     public RelatorioResponseDTO salvar(RelatorioRequestDTO dto, String emailUsuario) {
+        validarNovoReporte(dto);
         var usuario = usuarioRepository.findByEmail(emailUsuario)
                 .orElseThrow(() -> new NoSuchElementException("Usuario autenticado nao encontrado."));
         Relatorio relatorio = mapper.toEntity(dto);
         relatorio.setUsuarioId(usuario.getId());
         relatorio.setAutor(usuario.getNome());
         return mapper.toDTO(repository.save(relatorio));
+    }
+
+    private void validarNovoReporte(RelatorioRequestDTO dto) {
+        if (dto == null
+                || vazio(dto.titulo())
+                || vazio(dto.cep())
+                || !dto.cep().replaceAll("\\D", "").matches("\\d{8}")
+                || vazio(dto.rua())
+                || vazio(dto.numero())
+                || vazio(dto.cidade())
+                || vazio(dto.estado())
+                || vazio(dto.localizacao())
+                || vazio(dto.descricao())
+                || dto.urgencia() == null
+                || dto.multirao() == null
+                || vazio(dto.imagem())
+                || "[]".equals(dto.imagem().trim())) {
+            throw new ResponseStatusException(
+                    HttpStatus.BAD_REQUEST,
+                    "Preencha todos os campos obrigatórios do reporte e adicione pelo menos uma imagem.");
+        }
+    }
+
+    private boolean vazio(String valor) {
+        return valor == null || valor.isBlank();
     }
 
     @Transactional
