@@ -3,6 +3,7 @@ package com.limpacao.controller;
 import java.net.URI;
 import java.util.List;
 
+import org.springframework.security.core.Authentication;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -27,23 +28,32 @@ public class OfertaAjudaController {
     private final OfertaAjudaService service;
 
     @GetMapping
-    public ResponseEntity<List<OfertaAjudaResponseDTO>> listar(@PathVariable Long relatorioId) {
-        return ResponseEntity.ok(service.listarPorRelatorio(relatorioId));
+    public ResponseEntity<List<OfertaAjudaResponseDTO>> listar(
+            @PathVariable Long relatorioId,
+            Authentication authentication) {
+        return ResponseEntity.ok(service.listarPorRelatorio(
+                relatorioId,
+                authentication.getName()));
     }
 
     @PostMapping
     public ResponseEntity<OfertaAjudaResponseDTO> salvar(@PathVariable Long relatorioId,
-            @RequestBody OfertaAjudaRequestDTO dto) {
-        OfertaAjudaRequestDTO request = new OfertaAjudaRequestDTO(relatorioId, dto.nome(), dto.telefone(), dto.mensagem());
-        OfertaAjudaResponseDTO criado = service.salvar(request);
+            @RequestBody OfertaAjudaRequestDTO dto,
+            Authentication authentication) {
+        OfertaAjudaResponseDTO criado = service.salvar(
+                relatorioId,
+                dto,
+                authentication.getName());
         URI location = ServletUriComponentsBuilder.fromCurrentRequest()
                 .path("/{id}").buildAndExpand(criado.id()).toUri();
         return ResponseEntity.created(location).body(criado);
     }
 
     @DeleteMapping("/{id}")
-    public ResponseEntity<Void> deletar(@PathVariable Long id) {
-        service.deletar(id);
+    public ResponseEntity<Void> deletar(
+            @PathVariable Long id,
+            Authentication authentication) {
+        service.deletar(id, authentication.getName());
         return ResponseEntity.noContent().build();
     }
 }
