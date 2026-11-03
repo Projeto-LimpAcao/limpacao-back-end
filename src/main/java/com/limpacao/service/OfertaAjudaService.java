@@ -1,7 +1,7 @@
 package com.limpacao.service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
+import com.limpacao.exception.RecursoNaoEncontradoException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -92,7 +92,7 @@ public class OfertaAjudaService {
     @Transactional
     public void deletar(Long id, String emailUsuario) {
         OfertaAjuda oferta = repository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException(
+                .orElseThrow(() -> new RecursoNaoEncontradoException(
                         "Oferta de ajuda nao encontrada com id: " + id));
         validarDonoDoRelatorio(oferta.getRelatorioId(), emailUsuario);
         repository.delete(oferta);
