@@ -11,9 +11,12 @@ import com.limpacao.dto.AuthRequestDTO;
 import com.limpacao.dto.AuthResponseDTO;
 import com.limpacao.dto.UsuarioRequestDTO;
 import com.limpacao.entity.Usuario;
+import com.limpacao.exception.CredenciaisInvalidasException;
+import com.limpacao.exception.RegraDeNegocioException;
 import com.limpacao.repository.UsuarioRepository;
 import com.limpacao.security.JwtService;
 
+import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 
 @RestController
@@ -26,14 +29,14 @@ public class AuthController {
     private final PasswordEncoder passwordEncoder;
 
     @PostMapping("/register")
-    public ResponseEntity<AuthResponseDTO> register(@RequestBody UsuarioRequestDTO dto) {
+    public ResponseEntity<AuthResponseDTO> register(@RequestBody @Valid UsuarioRequestDTO dto) {
         if (usuarioRepository.existsByEmail(dto.email())) {
-            return ResponseEntity.badRequest().build();
+            throw new RegraDeNegocioException("Este e-mail já está cadastrado.");
         }
 
         Usuario usuario = Usuario.builder()
-                .nome(dto.nome())
-                .email(dto.email())
+                .nome(dto.nome().trim())
+                .email(dto.email().trim())
                 .senha(passwordEncoder.encode(dto.senha()))
                 .build();
 
@@ -44,12 +47,12 @@ public class AuthController {
     }
 
     @PostMapping("/login")
-    public ResponseEntity<AuthResponseDTO> login(@RequestBody AuthRequestDTO dto) {
-        var usuario = usuarioRepository.findByEmail(dto.email())
+    public ResponseEntity<AuthResponseDTO> login(@RequestBody @Valid AuthRequestDTO dto) {
+        var usuario = usuarioRepository.findByEmail(dto.email().trim())
                 .orElse(null);
 
         if (usuario == null || !passwordEncoder.matches(dto.senha(), usuario.getSenha())) {
-            return ResponseEntity.status(401).build();
+            throw new CredenciaisInvalidasException("E-mail ou senha inválidos.");
         }
 
         String token = jwtService.gerarToken(usuario.getEmail());

@@ -1,7 +1,6 @@
 package com.limpacao.service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -11,6 +10,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.limpacao.dto.RelatorioRequestDTO;
 import com.limpacao.dto.RelatorioResponseDTO;
 import com.limpacao.entity.Relatorio;
+import com.limpacao.exception.RecursoNaoEncontradoException;
 import com.limpacao.mapper.RelatorioMapper;
 import com.limpacao.repository.RelatorioRepository;
 import com.limpacao.repository.UsuarioRepository;
@@ -33,7 +33,7 @@ public class RelatorioService {
     @Transactional(readOnly = true)
     public RelatorioResponseDTO buscarPorId(Long id) {
         Relatorio relatorio = repository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Relatorio nao encontrado com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Reporte não encontrado com id: " + id));
         return mapper.toDTO(relatorio);
     }
 
@@ -45,7 +45,7 @@ public class RelatorioService {
     @Transactional(readOnly = true)
     public List<RelatorioResponseDTO> listarPorEmailUsuario(String email) {
         var usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new NoSuchElementException("Usuario autenticado nao encontrado."));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário autenticado não encontrado."));
         return mapper.toDTOList(repository.findByUsuarioId(usuario.getId()));
     }
 
@@ -58,7 +58,7 @@ public class RelatorioService {
     public RelatorioResponseDTO salvar(RelatorioRequestDTO dto, String emailUsuario) {
         validarNovoReporte(dto);
         var usuario = usuarioRepository.findByEmail(emailUsuario)
-                .orElseThrow(() -> new NoSuchElementException("Usuario autenticado nao encontrado."));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário autenticado não encontrado."));
         Relatorio relatorio = mapper.toEntity(dto);
         relatorio.setUsuarioId(usuario.getId());
         relatorio.setAutor(usuario.getNome());
@@ -93,7 +93,7 @@ public class RelatorioService {
     @Transactional
     public RelatorioResponseDTO atualizar(Long id, RelatorioRequestDTO dto) {
         Relatorio existente = repository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Relatorio nao encontrado com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Reporte não encontrado com id: " + id));
 
         if (dto.titulo() != null) existente.setTitulo(dto.titulo());
         if (dto.localizacao() != null) existente.setLocalizacao(dto.localizacao());
@@ -120,7 +120,7 @@ public class RelatorioService {
     @Transactional
     public void deletar(Long id) {
         if (!repository.existsById(id)) {
-            throw new NoSuchElementException("Relatorio nao encontrado com id: " + id);
+            throw new RecursoNaoEncontradoException("Reporte não encontrado com id: " + id);
         }
         repository.deleteById(id);
     }

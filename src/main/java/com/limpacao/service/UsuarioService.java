@@ -1,7 +1,6 @@
 package com.limpacao.service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -9,8 +8,10 @@ import org.springframework.transaction.annotation.Transactional;
 
 import com.limpacao.dto.UsuarioRequestDTO;
 import com.limpacao.dto.UsuarioResponseDTO;
-import com.limpacao.mapper.UsuarioMapper;
 import com.limpacao.entity.Usuario;
+import com.limpacao.exception.ConflitoException;
+import com.limpacao.exception.RecursoNaoEncontradoException;
+import com.limpacao.mapper.UsuarioMapper;
 import com.limpacao.repository.UsuarioRepository;
 
 import lombok.RequiredArgsConstructor;
@@ -31,14 +32,14 @@ public class UsuarioService {
     @Transactional(readOnly = true)
     public UsuarioResponseDTO buscarPorId(Long id) {
         Usuario usuario = repository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Usuario nao encontrado com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com id: " + id));
         return mapper.toDTO(usuario);
     }
 
     @Transactional
     public UsuarioResponseDTO salvar(UsuarioRequestDTO dto) {
         if (repository.existsByEmail(dto.email())) {
-            throw new IllegalArgumentException("Email ja cadastrado");
+            throw new ConflitoException("Email já cadastrado");
         }
         Usuario usuario = mapper.toEntity(dto);
         usuario.setSenha(passwordEncoder.encode(dto.senha()));
@@ -48,7 +49,7 @@ public class UsuarioService {
     @Transactional
     public UsuarioResponseDTO atualizar(Long id, UsuarioRequestDTO dto) {
         Usuario existente = repository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Usuario nao encontrado com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário não encontrado com id: " + id));
         existente.setNome(dto.nome());
         existente.setEmail(dto.email());
         existente.setSenha(passwordEncoder.encode(dto.senha()));
@@ -58,7 +59,7 @@ public class UsuarioService {
     @Transactional
     public void deletar(Long id) {
         if (!repository.existsById(id)) {
-            throw new NoSuchElementException("Usuario nao encontrado com id: " + id);
+            throw new RecursoNaoEncontradoException("Usuário não encontrado com id: " + id);
         }
         repository.deleteById(id);
     }
