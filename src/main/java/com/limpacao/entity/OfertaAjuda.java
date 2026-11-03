@@ -8,6 +8,7 @@ import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
+import jakarta.persistence.UniqueConstraint;
 import lombok.AllArgsConstructor;
 import lombok.Builder;
 import lombok.Getter;
@@ -15,7 +16,9 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
-@Table(name = "ofertas_ajuda")
+@Table(name = "ofertas_ajuda", uniqueConstraints = {
+        @UniqueConstraint(columnNames = { "relatorio_id", "usuario_id" })
+})
 @Getter
 @Setter
 @NoArgsConstructor
@@ -29,6 +32,9 @@ public class OfertaAjuda {
 
     @Column(name = "relatorio_id", nullable = false)
     private Long relatorioId;
+
+    @Column(name = "usuario_id")
+    private Long usuarioId;
 
     @Column(nullable = false, length = 255)
     private String nome;
