@@ -9,12 +9,15 @@ import org.springframework.web.bind.annotation.RestController;
 
 import com.limpacao.dto.AuthRequestDTO;
 import com.limpacao.dto.AuthResponseDTO;
+import com.limpacao.dto.RedefinirSenhaRequestDTO;
+import com.limpacao.dto.SolicitarRecuperacaoSenhaRequestDTO;
 import com.limpacao.dto.UsuarioRequestDTO;
 import com.limpacao.entity.Usuario;
 import com.limpacao.exception.CredenciaisInvalidasException;
 import com.limpacao.exception.RegraDeNegocioException;
 import com.limpacao.repository.UsuarioRepository;
 import com.limpacao.security.JwtService;
+import com.limpacao.service.RecuperacaoSenhaService;
 
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -27,6 +30,7 @@ public class AuthController {
     private final UsuarioRepository usuarioRepository;
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
+    private final RecuperacaoSenhaService recuperacaoSenhaService;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponseDTO> register(@RequestBody @Valid UsuarioRequestDTO dto) {
@@ -57,5 +61,17 @@ public class AuthController {
 
         String token = jwtService.gerarToken(usuario.getEmail());
         return ResponseEntity.ok(new AuthResponseDTO(token, usuario.getEmail(), usuario.getNome()));
+    }
+
+    @PostMapping("/esqueci-senha")
+    public ResponseEntity<Void> esqueciSenha(@RequestBody @Valid SolicitarRecuperacaoSenhaRequestDTO dto) {
+        recuperacaoSenhaService.solicitar(dto.email());
+        return ResponseEntity.noContent().build();
+    }
+
+    @PostMapping("/redefinir-senha")
+    public ResponseEntity<Void> redefinirSenha(@RequestBody @Valid RedefinirSenhaRequestDTO dto) {
+        recuperacaoSenhaService.redefinir(dto);
+        return ResponseEntity.noContent().build();
     }
 }
