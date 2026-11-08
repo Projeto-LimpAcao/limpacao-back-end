@@ -27,6 +27,8 @@ public record RelatorioResponseDTO(
     Integer ajudantes,
     Boolean multirao,
     String statusAnterior,
+    String imagemConclusao,
+    String justificativaReabertura,
     Long usuarioId,
     LocalDateTime criadoEm,
     LocalDateTime atualizadoEm

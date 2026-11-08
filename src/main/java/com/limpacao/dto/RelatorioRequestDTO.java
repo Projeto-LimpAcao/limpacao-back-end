@@ -19,6 +19,8 @@ public record RelatorioRequestDTO(
     String descricao,
     String autor,
     Boolean multirao,
-    Long usuarioId
+    Long usuarioId,
+    String imagemConclusao,
+    String justificativa
 ) {
 }

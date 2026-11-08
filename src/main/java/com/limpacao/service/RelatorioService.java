@@ -10,7 +10,9 @@ import org.springframework.web.server.ResponseStatusException;
 import com.limpacao.dto.RelatorioRequestDTO;
 import com.limpacao.dto.RelatorioResponseDTO;
 import com.limpacao.entity.Relatorio;
+import com.limpacao.enums.StatusRelatorio;
 import com.limpacao.exception.RecursoNaoEncontradoException;
+import com.limpacao.exception.RegraDeNegocioException;
 import com.limpacao.mapper.RelatorioMapper;
 import com.limpacao.repository.RelatorioRepository;
 import com.limpacao.repository.UsuarioRepository;
@@ -20,6 +22,8 @@ import lombok.RequiredArgsConstructor;
 @Service
 @RequiredArgsConstructor
 public class RelatorioService {
+
+    private static final int TAMANHO_MAXIMO_JUSTIFICATIVA = 500;
 
     private final RelatorioRepository repository;
     private final UsuarioRepository usuarioRepository;
@@ -105,9 +109,8 @@ public class RelatorioService {
         if (dto.latitude() != null) existente.setLatitude(dto.latitude());
         if (dto.longitude() != null) existente.setLongitude(dto.longitude());
         if (dto.urgencia() != null) existente.setUrgencia(dto.urgencia());
-        if (dto.status() != null) {
-            existente.setStatusAnterior(existente.getStatus().name());
-            existente.setStatus(dto.status());
+        if (dto.status() != null && dto.status() != existente.getStatus()) {
+            aplicarMudancaDeStatus(existente, dto);
         }
         if (dto.imagem() != null) existente.setImagem(dto.imagem());
         if (dto.descricao() != null) existente.setDescricao(dto.descricao());
@@ -115,6 +118,39 @@ public class RelatorioService {
         if (dto.multirao() != null) existente.setMultirao(dto.multirao());
 
         return mapper.toDTO(repository.save(existente));
+    }
+
+    /*
+     * Regras de troca de status:
+     * - Para RESOLVIDO: exige pelo menos uma foto que comprove a limpeza.
+     * - Saindo de RESOLVIDO: exige justificativa e descarta a foto da conclusão.
+     */
+    private void aplicarMudancaDeStatus(Relatorio relatorio, RelatorioRequestDTO dto) {
+        StatusRelatorio atual = relatorio.getStatus();
+        StatusRelatorio novo = dto.status();
+
+        if (novo == StatusRelatorio.RESOLVIDO) {
+            if (vazio(dto.imagemConclusao()) || "[]".equals(dto.imagemConclusao().trim())) {
+                throw new RegraDeNegocioException(
+                        "Anexe pelo menos uma foto comprovando a limpeza para marcar o reporte como resolvido.");
+            }
+            relatorio.setImagemConclusao(dto.imagemConclusao());
+        } else if (atual == StatusRelatorio.RESOLVIDO) {
+            if (vazio(dto.justificativa())) {
+                throw new RegraDeNegocioException(
+                        "Informe uma justificativa para reabrir um reporte resolvido.");
+            }
+            String justificativa = dto.justificativa().trim();
+            if (justificativa.length() > TAMANHO_MAXIMO_JUSTIFICATIVA) {
+                throw new RegraDeNegocioException(
+                        "A justificativa deve ter no máximo " + TAMANHO_MAXIMO_JUSTIFICATIVA + " caracteres.");
+            }
+            relatorio.setJustificativaReabertura(justificativa);
+            relatorio.setImagemConclusao(null);
+        }
+
+        relatorio.setStatusAnterior(atual.name());
+        relatorio.setStatus(novo);
     }
 
     @Transactional
