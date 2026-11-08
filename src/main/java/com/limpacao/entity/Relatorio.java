@@ -95,6 +95,12 @@ public class Relatorio {
     @Column(name = "status_anterior", length = 30)
     private String statusAnterior;
 
+    @Column(name = "imagem_conclusao", columnDefinition = "LONGTEXT")
+    private String imagemConclusao;
+
+    @Column(name = "justificativa_reabertura", columnDefinition = "TEXT")
+    private String justificativaReabertura;
+
     @Column(name = "usuario_id")
     private Long usuarioId;
 
