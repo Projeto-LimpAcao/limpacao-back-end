@@ -28,6 +28,7 @@ public class RelatorioService {
     private final RelatorioRepository repository;
     private final UsuarioRepository usuarioRepository;
     private final RelatorioMapper mapper;
+    private final ArmazenamentoImagemService armazenamento;
 
     @Transactional(readOnly = true)
     public List<RelatorioResponseDTO> listar() {
@@ -66,6 +67,7 @@ public class RelatorioService {
         Relatorio relatorio = mapper.toEntity(dto);
         relatorio.setUsuarioId(usuario.getId());
         relatorio.setAutor(usuario.getNome());
+        relatorio.setImagem(armazenamento.salvarLista(dto.imagem()));
         return mapper.toDTO(repository.save(relatorio));
     }
 
@@ -112,7 +114,14 @@ public class RelatorioService {
         if (dto.status() != null && dto.status() != existente.getStatus()) {
             aplicarMudancaDeStatus(existente, dto);
         }
-        if (dto.imagem() != null) existente.setImagem(dto.imagem());
+        if (dto.imagem() != null) {
+            String imagens = armazenamento.salvarLista(dto.imagem());
+            if ("[]".equals(imagens)) {
+                throw new RegraDeNegocioException("O reporte precisa ter pelo menos uma imagem.");
+            }
+            armazenamento.apagarRemovidas(existente.getImagem(), imagens);
+            existente.setImagem(imagens);
+        }
         if (dto.descricao() != null) existente.setDescricao(dto.descricao());
         if (dto.autor() != null) existente.setAutor(dto.autor());
         if (dto.multirao() != null) existente.setMultirao(dto.multirao());
@@ -134,7 +143,9 @@ public class RelatorioService {
                 throw new RegraDeNegocioException(
                         "Anexe pelo menos uma foto comprovando a limpeza para marcar o reporte como resolvido.");
             }
-            relatorio.setImagemConclusao(dto.imagemConclusao());
+            String imagens = armazenamento.salvarLista(dto.imagemConclusao());
+            armazenamento.apagarRemovidas(relatorio.getImagemConclusao(), imagens);
+            relatorio.setImagemConclusao(imagens);
         } else if (atual == StatusRelatorio.RESOLVIDO) {
             if (vazio(dto.justificativa())) {
                 throw new RegraDeNegocioException(
@@ -146,6 +157,7 @@ public class RelatorioService {
                         "A justificativa deve ter no máximo " + TAMANHO_MAXIMO_JUSTIFICATIVA + " caracteres.");
             }
             relatorio.setJustificativaReabertura(justificativa);
+            armazenamento.apagarTodas(relatorio.getImagemConclusao());
             relatorio.setImagemConclusao(null);
         }
 
@@ -155,9 +167,10 @@ public class RelatorioService {
 
     @Transactional
     public void deletar(Long id) {
-        if (!repository.existsById(id)) {
-            throw new RecursoNaoEncontradoException("Reporte não encontrado com id: " + id);
-        }
-        repository.deleteById(id);
+        Relatorio relatorio = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Reporte não encontrado com id: " + id));
+        armazenamento.apagarTodas(relatorio.getImagem());
+        armazenamento.apagarTodas(relatorio.getImagemConclusao());
+        repository.delete(relatorio);
     }
 }

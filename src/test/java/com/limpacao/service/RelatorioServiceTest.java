@@ -31,6 +31,7 @@ import com.limpacao.repository.UsuarioRepository;
 class RelatorioServiceTest {
 
     private static final String FOTO_CONCLUSAO = "[\"data:image/png;base64,AAAA\"]";
+    private static final String FOTO_SALVA = "[\"/api/arquivos/foto.png\"]";
 
     @Mock
     private RelatorioRepository relatorioRepository;
@@ -41,6 +42,9 @@ class RelatorioServiceTest {
     @Mock
     private RelatorioMapper relatorioMapper;
 
+    @Mock
+    private ArmazenamentoImagemService armazenamento;
+
     private RelatorioService service;
 
     @BeforeEach
@@ -48,7 +52,8 @@ class RelatorioServiceTest {
         service = new RelatorioService(
                 relatorioRepository,
                 usuarioRepository,
-                relatorioMapper);
+                relatorioMapper,
+                armazenamento);
     }
 
     @Test
@@ -99,12 +104,13 @@ class RelatorioServiceTest {
         Relatorio relatorio = relatorioComStatus(StatusRelatorio.PENDENTE);
         when(relatorioRepository.findById(1L)).thenReturn(Optional.of(relatorio));
         when(relatorioRepository.save(relatorio)).thenReturn(relatorio);
+        when(armazenamento.salvarLista(FOTO_CONCLUSAO)).thenReturn(FOTO_SALVA);
 
         service.atualizar(1L, mudancaDeStatus(StatusRelatorio.RESOLVIDO, FOTO_CONCLUSAO, null));
 
         assertEquals(StatusRelatorio.RESOLVIDO, relatorio.getStatus());
         assertEquals("PENDENTE", relatorio.getStatusAnterior());
-        assertEquals(FOTO_CONCLUSAO, relatorio.getImagemConclusao());
+        assertEquals(FOTO_SALVA, relatorio.getImagemConclusao());
     }
 
     @Test
@@ -136,6 +142,7 @@ class RelatorioServiceTest {
         assertEquals("RESOLVIDO", relatorio.getStatusAnterior());
         assertEquals("O lixo voltou a ser descartado no local.", relatorio.getJustificativaReabertura());
         assertNull(relatorio.getImagemConclusao());
+        verify(armazenamento).apagarTodas(FOTO_CONCLUSAO);
     }
 
     @Test

@@ -40,6 +40,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/relatorios").permitAll()
+                .requestMatchers(HttpMethod.GET, "/api/arquivos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/chat/mensagens/contagens").permitAll()
                 .anyRequest().authenticated()
             )
