@@ -11,6 +11,7 @@ import org.springframework.web.server.ResponseStatusException;
 import com.limpacao.dto.OfertaAjudaRequestDTO;
 import com.limpacao.dto.OfertaAjudaResponseDTO;
 import com.limpacao.entity.OfertaAjuda;
+import com.limpacao.entity.Relatorio;
 import com.limpacao.mapper.OfertaAjudaMapper;
 import com.limpacao.repository.OfertaAjudaRepository;
 import com.limpacao.repository.RelatorioRepository;
@@ -86,7 +87,9 @@ public class OfertaAjudaService {
                 .telefone(dto.telefone().trim())
                 .mensagem(dto.mensagem() == null ? "" : dto.mensagem().trim())
                 .build();
-        return mapper.toDTO(repository.save(oferta));
+        OfertaAjudaResponseDTO salva = mapper.toDTO(repository.saveAndFlush(oferta));
+        atualizarContagemAjudantes(relatorio);
+        return salva;
     }
 
     @Transactional
@@ -96,6 +99,16 @@ public class OfertaAjudaService {
                         "Oferta de ajuda nao encontrada com id: " + id));
         validarDonoDoRelatorio(oferta.getRelatorioId(), emailUsuario);
         repository.delete(oferta);
+        repository.flush();
+        relatorioRepository.findById(oferta.getRelatorioId())
+                .ifPresent(this::atualizarContagemAjudantes);
+    }
+
+    /* Cada oferta de ajuda conta como uma pessoa ajudando; o total fica
+       gravado no reporte para aparecer para todos os usuários. */
+    private void atualizarContagemAjudantes(Relatorio relatorio) {
+        relatorio.setAjudantes((int) repository.countByRelatorioId(relatorio.getId()));
+        relatorioRepository.save(relatorio);
     }
 
     private void validarDonoDoRelatorio(Long relatorioId, String emailUsuario) {

@@ -1,5 +1,6 @@
 package com.limpacao.repository;
 
+import java.util.List;
 import java.util.Optional;
 
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -16,4 +17,6 @@ public interface ParticipacaoRepository extends JpaRepository<Participacao, Long
             Long relatorioId, Long usuarioId, TipoParticipacao tipoParticipacao);
 
     long countByRelatorioIdAndTipoParticipacao(Long relatorioId, TipoParticipacao tipoParticipacao);
+
+    List<Participacao> findByUsuarioIdAndTipoParticipacao(Long usuarioId, TipoParticipacao tipoParticipacao);
 }
