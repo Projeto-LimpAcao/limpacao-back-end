@@ -154,6 +154,65 @@ class RelatorioServiceTest {
         return Relatorio.builder().id(1L).status(status).build();
     }
 
+    @Test
+    void edicaoComEnderecoGravaCoordenadas() {
+        Relatorio relatorio = relatorioComStatus(StatusRelatorio.PENDENTE);
+        when(relatorioRepository.findById(1L)).thenReturn(Optional.of(relatorio));
+        when(relatorioRepository.save(relatorio)).thenReturn(relatorio);
+
+        service.atualizar(1L, edicaoDeEndereco(-27.5954, -48.548));
+
+        assertEquals(-27.5954, relatorio.getLatitude());
+        assertEquals(-48.548, relatorio.getLongitude());
+    }
+
+    @Test
+    void edicaoComEnderecoNaoLocalizadoRemoveCoordenadasAntigas() {
+        Relatorio relatorio = relatorioComStatus(StatusRelatorio.PENDENTE);
+        relatorio.setLatitude(-27.0);
+        relatorio.setLongitude(-48.0);
+        when(relatorioRepository.findById(1L)).thenReturn(Optional.of(relatorio));
+        when(relatorioRepository.save(relatorio)).thenReturn(relatorio);
+
+        service.atualizar(1L, edicaoDeEndereco(null, null));
+
+        assertNull(relatorio.getLatitude());
+        assertNull(relatorio.getLongitude());
+    }
+
+    @Test
+    void mudancaDeStatusNaoMexeNasCoordenadas() {
+        Relatorio relatorio = relatorioComStatus(StatusRelatorio.PENDENTE);
+        relatorio.setLatitude(-27.0);
+        relatorio.setLongitude(-48.0);
+        when(relatorioRepository.findById(1L)).thenReturn(Optional.of(relatorio));
+        when(relatorioRepository.save(relatorio)).thenReturn(relatorio);
+
+        service.atualizar(1L, mudancaDeStatus(StatusRelatorio.EM_ANDAMENTO, null, null));
+
+        assertEquals(-27.0, relatorio.getLatitude());
+        assertEquals(-48.0, relatorio.getLongitude());
+    }
+
+    @Test
+    void rejeitaCoordenadasForaDoIntervalo() {
+        Relatorio relatorio = relatorioComStatus(StatusRelatorio.PENDENTE);
+        when(relatorioRepository.findById(1L)).thenReturn(Optional.of(relatorio));
+
+        assertThrows(RegraDeNegocioException.class,
+                () -> service.atualizar(1L, edicaoDeEndereco(-127.0, -48.0)));
+        assertThrows(RegraDeNegocioException.class,
+                () -> service.atualizar(1L, edicaoDeEndereco(-27.0, null)));
+        verify(relatorioRepository, never()).save(any());
+    }
+
+    private RelatorioRequestDTO edicaoDeEndereco(Double latitude, Double longitude) {
+        return new RelatorioRequestDTO(
+                null, null, "88000-000", null, null, null, null, latitude, longitude, null,
+                null, null, null, null, null, null,
+                null, null);
+    }
+
     private RelatorioRequestDTO mudancaDeStatus(
             StatusRelatorio status, String imagemConclusao, String justificativa) {
         return new RelatorioRequestDTO(

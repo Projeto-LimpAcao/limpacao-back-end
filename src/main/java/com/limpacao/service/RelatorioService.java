@@ -88,6 +88,19 @@ public class RelatorioService {
                     HttpStatus.BAD_REQUEST,
                     "Preencha todos os campos obrigatórios do reporte e adicione pelo menos uma imagem.");
         }
+        validarCoordenadas(dto);
+    }
+
+    private void validarCoordenadas(RelatorioRequestDTO dto) {
+        Double latitude = dto.latitude();
+        Double longitude = dto.longitude();
+        if (latitude == null && longitude == null) return;
+        if (latitude == null || longitude == null
+                || latitude.isNaN() || longitude.isNaN()
+                || latitude < -90 || latitude > 90
+                || longitude < -180 || longitude > 180) {
+            throw new RegraDeNegocioException("Coordenadas do local inválidas.");
+        }
     }
 
     private boolean vazio(String valor) {
@@ -106,8 +119,12 @@ public class RelatorioService {
         if (dto.cidade() != null) existente.setCidade(dto.cidade());
         if (dto.estado() != null) existente.setEstado(dto.estado());
         if (dto.numero() != null) existente.setNumero(dto.numero());
-        if (dto.latitude() != null) existente.setLatitude(dto.latitude());
-        if (dto.longitude() != null) existente.setLongitude(dto.longitude());
+        
+        if (dto.cep() != null) {
+            validarCoordenadas(dto);
+            existente.setLatitude(dto.latitude());
+            existente.setLongitude(dto.longitude());
+        }
         if (dto.urgencia() != null) existente.setUrgencia(dto.urgencia());
         if (dto.status() != null && dto.status() != existente.getStatus()) {
             aplicarMudancaDeStatus(existente, dto);
