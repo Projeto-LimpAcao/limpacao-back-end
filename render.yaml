@@ -1,0 +1,50 @@
+# Blueprint do Render: cria o banco PostgreSQL + o servico web da API.
+# Render Dashboard -> New -> Blueprint -> aponte para este repositorio -> Apply.
+
+databases:
+  - name: limpacao-db
+    databaseName: limpacao
+    user: limpacao
+    plan: free
+    region: oregon
+
+services:
+  - type: web
+    name: limpacao-api
+    runtime: docker
+    plan: free
+    region: oregon
+    dockerfilePath: ./Dockerfile
+    healthCheckPath: /actuator/health
+    autoDeploy: true
+    envVars:
+      - key: PGHOST
+        fromDatabase:
+          name: limpacao-db
+          property: host
+      - key: PGPORT
+        fromDatabase:
+          name: limpacao-db
+          property: port
+      - key: PGDATABASE
+        fromDatabase:
+          name: limpacao-db
+          property: database
+      - key: PGUSER
+        fromDatabase:
+          name: limpacao-db
+          property: user
+      - key: PGPASSWORD
+        fromDatabase:
+          name: limpacao-db
+          property: password
+      - key: JWT_SECRET
+        generateValue: true
+      - key: CORS_ORIGINS
+        sync: false
+      - key: MAIL_USERNAME
+        sync: false
+      - key: MAIL_PASSWORD
+        sync: false
+      - key: JAVA_TOOL_OPTIONS
+        value: -XX:MaxRAMPercentage=75.0

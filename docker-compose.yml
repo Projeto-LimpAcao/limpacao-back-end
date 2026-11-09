@@ -1,0 +1,46 @@
+# Ambiente local: banco Postgres igual ao do Render.
+# Subir so o banco:   docker compose up -d db   (depois rode a API pela IDE / ./mvnw spring-boot:run)
+# Subir banco + API:  docker compose up --build
+
+services:
+  db:
+    image: postgres:16-alpine
+    container_name: limpacao-db
+    environment:
+      POSTGRES_DB: limpacao
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: postgres
+    ports:
+      - "5432:5432"
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U postgres"]
+      interval: 5s
+      timeout: 3s
+      retries: 10
+
+  api:
+    build: .
+    container_name: limpacao-api
+    depends_on:
+      db:
+        condition: service_healthy
+    environment:
+      PGHOST: db
+      PGPORT: 5432
+      PGDATABASE: limpacao
+      PGUSER: postgres
+      PGPASSWORD: postgres
+      PORT: 8080
+      CORS_ORIGINS: http://localhost:5173
+      MAIL_USERNAME: ${MAIL_USERNAME:-}
+      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+    ports:
+      - "8080:8080"
+    volumes:
+      - uploads:/app/uploads
+
+volumes:
+  pgdata:
+  uploads:
