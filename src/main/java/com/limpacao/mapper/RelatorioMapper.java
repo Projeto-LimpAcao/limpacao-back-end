@@ -56,6 +56,8 @@ public class RelatorioMapper {
                 entity.getAjudantes(),
                 entity.getMultirao(),
                 entity.getStatusAnterior(),
+                entity.getImagemConclusao(),
+                entity.getJustificativaReabertura(),
                 entity.getUsuarioId(),
                 entity.getCriadoEm(),
                 entity.getAtualizadoEm());

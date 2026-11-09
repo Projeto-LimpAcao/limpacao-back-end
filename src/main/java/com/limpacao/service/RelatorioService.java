@@ -1,7 +1,6 @@
 package com.limpacao.service;
 
 import java.util.List;
-import java.util.NoSuchElementException;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.stereotype.Service;
@@ -11,6 +10,9 @@ import org.springframework.web.server.ResponseStatusException;
 import com.limpacao.dto.RelatorioRequestDTO;
 import com.limpacao.dto.RelatorioResponseDTO;
 import com.limpacao.entity.Relatorio;
+import com.limpacao.enums.StatusRelatorio;
+import com.limpacao.exception.RecursoNaoEncontradoException;
+import com.limpacao.exception.RegraDeNegocioException;
 import com.limpacao.mapper.RelatorioMapper;
 import com.limpacao.repository.RelatorioRepository;
 import com.limpacao.repository.UsuarioRepository;
@@ -21,9 +23,12 @@ import lombok.RequiredArgsConstructor;
 @RequiredArgsConstructor
 public class RelatorioService {
 
+    private static final int TAMANHO_MAXIMO_JUSTIFICATIVA = 500;
+
     private final RelatorioRepository repository;
     private final UsuarioRepository usuarioRepository;
     private final RelatorioMapper mapper;
+    private final ArmazenamentoImagemService armazenamento;
 
     @Transactional(readOnly = true)
     public List<RelatorioResponseDTO> listar() {
@@ -33,7 +38,7 @@ public class RelatorioService {
     @Transactional(readOnly = true)
     public RelatorioResponseDTO buscarPorId(Long id) {
         Relatorio relatorio = repository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Relatorio nao encontrado com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Reporte não encontrado com id: " + id));
         return mapper.toDTO(relatorio);
     }
 
@@ -45,7 +50,7 @@ public class RelatorioService {
     @Transactional(readOnly = true)
     public List<RelatorioResponseDTO> listarPorEmailUsuario(String email) {
         var usuario = usuarioRepository.findByEmail(email)
-                .orElseThrow(() -> new NoSuchElementException("Usuario autenticado nao encontrado."));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário autenticado não encontrado."));
         return mapper.toDTOList(repository.findByUsuarioId(usuario.getId()));
     }
 
@@ -58,10 +63,11 @@ public class RelatorioService {
     public RelatorioResponseDTO salvar(RelatorioRequestDTO dto, String emailUsuario) {
         validarNovoReporte(dto);
         var usuario = usuarioRepository.findByEmail(emailUsuario)
-                .orElseThrow(() -> new NoSuchElementException("Usuario autenticado nao encontrado."));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Usuário autenticado não encontrado."));
         Relatorio relatorio = mapper.toEntity(dto);
         relatorio.setUsuarioId(usuario.getId());
         relatorio.setAutor(usuario.getNome());
+        relatorio.setImagem(armazenamento.salvarLista(dto.imagem()));
         return mapper.toDTO(repository.save(relatorio));
     }
 
@@ -84,6 +90,19 @@ public class RelatorioService {
                     HttpStatus.BAD_REQUEST,
                     "Preencha todos os campos obrigatórios do reporte e adicione pelo menos uma imagem.");
         }
+        validarCoordenadas(dto);
+    }
+
+    private void validarCoordenadas(RelatorioRequestDTO dto) {
+        Double latitude = dto.latitude();
+        Double longitude = dto.longitude();
+        if (latitude == null && longitude == null) return;
+        if (latitude == null || longitude == null
+                || latitude.isNaN() || longitude.isNaN()
+                || latitude < -90 || latitude > 90
+                || longitude < -180 || longitude > 180) {
+            throw new RegraDeNegocioException("Coordenadas do local inválidas.");
+        }
     }
 
     private boolean vazio(String valor) {
@@ -93,7 +112,7 @@ public class RelatorioService {
     @Transactional
     public RelatorioResponseDTO atualizar(Long id, RelatorioRequestDTO dto) {
         Relatorio existente = repository.findById(id)
-                .orElseThrow(() -> new NoSuchElementException("Relatorio nao encontrado com id: " + id));
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Reporte não encontrado com id: " + id));
 
         if (dto.titulo() != null) existente.setTitulo(dto.titulo());
         if (dto.localizacao() != null) existente.setLocalizacao(dto.localizacao());
@@ -102,14 +121,24 @@ public class RelatorioService {
         if (dto.cidade() != null) existente.setCidade(dto.cidade());
         if (dto.estado() != null) existente.setEstado(dto.estado());
         if (dto.numero() != null) existente.setNumero(dto.numero());
-        if (dto.latitude() != null) existente.setLatitude(dto.latitude());
-        if (dto.longitude() != null) existente.setLongitude(dto.longitude());
-        if (dto.urgencia() != null) existente.setUrgencia(dto.urgencia());
-        if (dto.status() != null) {
-            existente.setStatusAnterior(existente.getStatus().name());
-            existente.setStatus(dto.status());
+        
+        if (dto.cep() != null) {
+            validarCoordenadas(dto);
+            existente.setLatitude(dto.latitude());
+            existente.setLongitude(dto.longitude());
         }
-        if (dto.imagem() != null) existente.setImagem(dto.imagem());
+        if (dto.urgencia() != null) existente.setUrgencia(dto.urgencia());
+        if (dto.status() != null && dto.status() != existente.getStatus()) {
+            aplicarMudancaDeStatus(existente, dto);
+        }
+        if (dto.imagem() != null) {
+            String imagens = armazenamento.salvarLista(dto.imagem());
+            if ("[]".equals(imagens)) {
+                throw new RegraDeNegocioException("O reporte precisa ter pelo menos uma imagem.");
+            }
+            armazenamento.apagarRemovidas(existente.getImagem(), imagens);
+            existente.setImagem(imagens);
+        }
         if (dto.descricao() != null) existente.setDescricao(dto.descricao());
         if (dto.autor() != null) existente.setAutor(dto.autor());
         if (dto.multirao() != null) existente.setMultirao(dto.multirao());
@@ -117,11 +146,48 @@ public class RelatorioService {
         return mapper.toDTO(repository.save(existente));
     }
 
+    /*
+     * Regras de troca de status:
+     * - Para RESOLVIDO: exige pelo menos uma foto que comprove a limpeza.
+     * - Saindo de RESOLVIDO: exige justificativa e descarta a foto da conclusão.
+     */
+    private void aplicarMudancaDeStatus(Relatorio relatorio, RelatorioRequestDTO dto) {
+        StatusRelatorio atual = relatorio.getStatus();
+        StatusRelatorio novo = dto.status();
+
+        if (novo == StatusRelatorio.RESOLVIDO) {
+            if (vazio(dto.imagemConclusao()) || "[]".equals(dto.imagemConclusao().trim())) {
+                throw new RegraDeNegocioException(
+                        "Anexe pelo menos uma foto comprovando a limpeza para marcar o reporte como resolvido.");
+            }
+            String imagens = armazenamento.salvarLista(dto.imagemConclusao());
+            armazenamento.apagarRemovidas(relatorio.getImagemConclusao(), imagens);
+            relatorio.setImagemConclusao(imagens);
+        } else if (atual == StatusRelatorio.RESOLVIDO) {
+            if (vazio(dto.justificativa())) {
+                throw new RegraDeNegocioException(
+                        "Informe uma justificativa para reabrir um reporte resolvido.");
+            }
+            String justificativa = dto.justificativa().trim();
+            if (justificativa.length() > TAMANHO_MAXIMO_JUSTIFICATIVA) {
+                throw new RegraDeNegocioException(
+                        "A justificativa deve ter no máximo " + TAMANHO_MAXIMO_JUSTIFICATIVA + " caracteres.");
+            }
+            relatorio.setJustificativaReabertura(justificativa);
+            armazenamento.apagarTodas(relatorio.getImagemConclusao());
+            relatorio.setImagemConclusao(null);
+        }
+
+        relatorio.setStatusAnterior(atual.name());
+        relatorio.setStatus(novo);
+    }
+
     @Transactional
     public void deletar(Long id) {
-        if (!repository.existsById(id)) {
-            throw new NoSuchElementException("Relatorio nao encontrado com id: " + id);
-        }
-        repository.deleteById(id);
+        Relatorio relatorio = repository.findById(id)
+                .orElseThrow(() -> new RecursoNaoEncontradoException("Reporte não encontrado com id: " + id));
+        armazenamento.apagarTodas(relatorio.getImagem());
+        armazenamento.apagarTodas(relatorio.getImagemConclusao());
+        repository.delete(relatorio);
     }
 }

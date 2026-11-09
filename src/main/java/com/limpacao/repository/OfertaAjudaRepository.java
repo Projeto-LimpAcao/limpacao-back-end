@@ -12,4 +12,5 @@ public interface OfertaAjudaRepository extends JpaRepository<OfertaAjuda, Long> 
     List<OfertaAjuda> findByRelatorioIdInOrderByCriadoEmDesc(List<Long> relatorioIds);
     List<OfertaAjuda> findByUsuarioIdOrderByCriadoEmDesc(Long usuarioId);
     boolean existsByUsuarioIdAndRelatorioId(Long usuarioId, Long relatorioId);
+    long countByRelatorioId(Long relatorioId);
 }
