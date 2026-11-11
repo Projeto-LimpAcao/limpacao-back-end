@@ -1,11 +1,11 @@
 package com.limpacao.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record UsuarioResponseDTO(
     Long id,
     String nome,
     String email,
-    LocalDateTime criadoEm
+    OffsetDateTime criadoEm
 ) {
 }

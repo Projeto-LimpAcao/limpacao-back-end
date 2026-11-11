@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.limpacao.dto.UsuarioRequestDTO;
+import com.limpacao.util.DataHora;
 import com.limpacao.dto.UsuarioResponseDTO;
 import com.limpacao.entity.Usuario;
 
@@ -26,7 +27,7 @@ public class UsuarioMapper {
                 entity.getId(),
                 entity.getNome(),
                 entity.getEmail(),
-                entity.getCriadoEm());
+                DataHora.comFuso(entity.getCriadoEm()));
     }
 
     public List<UsuarioResponseDTO> toDTOList(List<Usuario> entities) {

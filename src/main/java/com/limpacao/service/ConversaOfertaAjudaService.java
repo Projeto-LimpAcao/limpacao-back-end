@@ -8,6 +8,7 @@ import org.springframework.transaction.annotation.Transactional;
 import org.springframework.web.server.ResponseStatusException;
 
 import com.limpacao.dto.MensagemOfertaAjudaRequestDTO;
+import com.limpacao.util.DataHora;
 import com.limpacao.dto.MensagemOfertaAjudaResponseDTO;
 import com.limpacao.entity.MensagemOfertaAjuda;
 import com.limpacao.repository.MensagemOfertaAjudaRepository;
@@ -90,7 +91,7 @@ public class ConversaOfertaAjudaService {
                 mensagem.getOfertaId(),
                 autor,
                 mensagem.getTexto(),
-                mensagem.getCriadoEm(),
+                DataHora.comFuso(mensagem.getCriadoEm()),
                 usuarioId.equals(mensagem.getUsuarioId()));
     }
 }
