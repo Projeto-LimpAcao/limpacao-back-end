@@ -1,13 +1,13 @@
 package com.limpacao.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record MensagemChatResponseDTO(
     Long id,
     Long relatorioId,
     String autor,
     String texto,
-    LocalDateTime criadoEm,
+    OffsetDateTime criadoEm,
     Long respostaAId,
     String respostaAAutor,
     String respostaATexto

@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.limpacao.dto.MensagemChatRequestDTO;
+import com.limpacao.util.DataHora;
 import com.limpacao.dto.MensagemChatResponseDTO;
 import com.limpacao.entity.MensagemChat;
 
@@ -28,7 +29,7 @@ public class MensagemChatMapper {
                 entity.getRelatorioId(),
                 entity.getAutor(),
                 entity.getTexto(),
-                entity.getCriadoEm(),
+                DataHora.comFuso(entity.getCriadoEm()),
                 entity.getRespostaAId(),
                 entity.getRespostaAAutor(),
                 entity.getRespostaATexto());

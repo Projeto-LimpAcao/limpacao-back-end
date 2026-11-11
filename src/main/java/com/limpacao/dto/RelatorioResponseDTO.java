@@ -1,7 +1,7 @@
 package com.limpacao.dto;
 
 import java.time.LocalDate;
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 import com.limpacao.enums.StatusRelatorio;
 import com.limpacao.enums.Urgencia;
@@ -30,7 +30,7 @@ public record RelatorioResponseDTO(
     String imagemConclusao,
     String justificativaReabertura,
     Long usuarioId,
-    LocalDateTime criadoEm,
-    LocalDateTime atualizadoEm
+    OffsetDateTime criadoEm,
+    OffsetDateTime atualizadoEm
 ) {
 }

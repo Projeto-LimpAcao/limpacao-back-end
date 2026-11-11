@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.limpacao.dto.ParticipacaoRequestDTO;
+import com.limpacao.util.DataHora;
 import com.limpacao.dto.ParticipacaoResponseDTO;
 import com.limpacao.entity.Participacao;
 
@@ -27,7 +28,7 @@ public class ParticipacaoMapper {
                 entity.getRelatorioId(),
                 entity.getUsuarioId(),
                 entity.getTipoParticipacao(),
-                entity.getCriadoEm());
+                DataHora.comFuso(entity.getCriadoEm()));
     }
 
     public List<ParticipacaoResponseDTO> toDTOList(List<Participacao> entities) {

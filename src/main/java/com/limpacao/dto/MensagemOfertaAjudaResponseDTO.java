@@ -1,12 +1,12 @@
 package com.limpacao.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 public record MensagemOfertaAjudaResponseDTO(
         Long id,
         Long ofertaId,
         String autor,
         String texto,
-        LocalDateTime criadoEm,
+        OffsetDateTime criadoEm,
         boolean minha) {
 }
