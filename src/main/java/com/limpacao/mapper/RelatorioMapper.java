@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.limpacao.dto.RelatorioRequestDTO;
+import com.limpacao.util.DataHora;
 import com.limpacao.dto.RelatorioResponseDTO;
 import com.limpacao.entity.Relatorio;
 
@@ -59,8 +60,8 @@ public class RelatorioMapper {
                 entity.getImagemConclusao(),
                 entity.getJustificativaReabertura(),
                 entity.getUsuarioId(),
-                entity.getCriadoEm(),
-                entity.getAtualizadoEm());
+                DataHora.comFuso(entity.getCriadoEm()),
+                DataHora.comFuso(entity.getAtualizadoEm()));
     }
 
     public List<RelatorioResponseDTO> toDTOList(List<Relatorio> entities) {

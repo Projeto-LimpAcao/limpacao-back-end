@@ -5,6 +5,7 @@ import java.util.List;
 import org.springframework.stereotype.Component;
 
 import com.limpacao.dto.OfertaAjudaResponseDTO;
+import com.limpacao.util.DataHora;
 import com.limpacao.entity.OfertaAjuda;
 
 @Component
@@ -18,7 +19,7 @@ public class OfertaAjudaMapper {
                 entity.getNome(),
                 entity.getTelefone(),
                 entity.getMensagem(),
-                entity.getCriadoEm());
+                DataHora.comFuso(entity.getCriadoEm()));
     }
 
     public List<OfertaAjudaResponseDTO> toDTOList(List<OfertaAjuda> entities) {

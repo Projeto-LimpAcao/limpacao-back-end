@@ -1,6 +1,6 @@
 package com.limpacao.dto;
 
-import java.time.LocalDateTime;
+import java.time.OffsetDateTime;
 
 import com.limpacao.enums.TipoParticipacao;
 
@@ -9,6 +9,6 @@ public record ParticipacaoResponseDTO(
     Long relatorioId,
     Long usuarioId,
     TipoParticipacao tipoParticipacao,
-    LocalDateTime criadoEm
+    OffsetDateTime criadoEm
 ) {
 }
