@@ -1,5 +1,8 @@
 package com.limpacao.config;
 
+import java.util.List;
+
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
 import org.springframework.http.HttpMethod;
@@ -10,6 +13,9 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
+import org.springframework.web.cors.CorsConfiguration;
+import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
 
 import com.limpacao.security.CustomAccessDeniedHandler;
 import com.limpacao.security.CustomAuthenticationEntryPoint;
@@ -30,6 +36,7 @@ public class SecurityConfig {
     public SecurityFilterChain securityFilterChain(HttpSecurity http) throws Exception {
         http
             .csrf(csrf -> csrf.disable())
+            .cors(cors -> { })
             .sessionManagement(session -> session.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
             .exceptionHandling(exceptions -> exceptions
                 .authenticationEntryPoint(authenticationEntryPoint)
@@ -39,6 +46,7 @@ public class SecurityConfig {
                 .requestMatchers("/api/auth/**").permitAll()
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
+                .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/relatorios").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/arquivos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/chat/mensagens/contagens").permitAll()
@@ -47,6 +55,25 @@ public class SecurityConfig {
             .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+
+    /*
+     * Libera o front-end (hospedado em outro dominio no Render) para chamar a API.
+     * As origens vem de limpacao.cors.origens / variavel CORS_ORIGINS,
+     * separadas por virgula. Aceita curingas, ex.: https://*.onrender.com
+     */
+    @Bean
+    public CorsConfigurationSource corsConfigurationSource(
+            @Value("${limpacao.cors.origens}") List<String> origens) {
+        CorsConfiguration config = new CorsConfiguration();
+        config.setAllowedOriginPatterns(origens.stream().map(String::trim).filter(o -> !o.isEmpty()).toList());
+        config.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+        config.setAllowedHeaders(List.of("*"));
+        config.setMaxAge(3600L);
+
+        UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
+        source.registerCorsConfiguration("/**", config);
+        return source;
     }
 
     @Bean

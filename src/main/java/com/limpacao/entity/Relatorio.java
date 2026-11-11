@@ -71,7 +71,7 @@ public class Relatorio {
     @Column(nullable = false)
     private LocalDate data;
 
-    @Column(columnDefinition = "LONGTEXT")
+    @Column(columnDefinition = "TEXT")
     private String imagem;
 
     @Column(nullable = false, columnDefinition = "TEXT")
@@ -95,7 +95,7 @@ public class Relatorio {
     @Column(name = "status_anterior", length = 30)
     private String statusAnterior;
 
-    @Column(name = "imagem_conclusao", columnDefinition = "LONGTEXT")
+    @Column(name = "imagem_conclusao", columnDefinition = "TEXT")
     private String imagemConclusao;
 
     @Column(name = "justificativa_reabertura", columnDefinition = "TEXT")
