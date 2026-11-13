@@ -42,9 +42,9 @@ services:
         generateValue: true
       - key: CORS_ORIGINS
         sync: false
-      - key: MAIL_USERNAME
+      - key: BREVO_API_KEY
         sync: false
-      - key: MAIL_PASSWORD
+      - key: MAIL_REMETENTE
         sync: false
       - key: JAVA_TOOL_OPTIONS
         value: -XX:MaxRAMPercentage=75.0

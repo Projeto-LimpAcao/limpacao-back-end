@@ -34,8 +34,8 @@ services:
       PGPASSWORD: postgres
       PORT: 8080
       CORS_ORIGINS: http://localhost:5173
-      MAIL_USERNAME: ${MAIL_USERNAME:-}
-      MAIL_PASSWORD: ${MAIL_PASSWORD:-}
+      BREVO_API_KEY: ${BREVO_API_KEY:-}
+      MAIL_REMETENTE: ${MAIL_REMETENTE:-}
     ports:
       - "8080:8080"
     volumes:
