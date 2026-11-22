@@ -15,7 +15,7 @@ services:
     plan: free
     region: oregon
     dockerfilePath: ./Dockerfile
-    healthCheckPath: /actuator/health
+    healthCheckPath: /actuator/health/readiness
     autoDeploy: true
     envVars:
       - key: PGHOST
@@ -45,6 +45,12 @@ services:
       - key: BREVO_API_KEY
         sync: false
       - key: MAIL_REMETENTE
+        sync: false
+      - key: ADMIN_EMAILS
+        sync: false
+      - key: ADMIN_EMAIL
+        sync: false
+      - key: ADMIN_SENHA
         sync: false
       - key: JAVA_TOOL_OPTIONS
         value: -XX:MaxRAMPercentage=75.0
