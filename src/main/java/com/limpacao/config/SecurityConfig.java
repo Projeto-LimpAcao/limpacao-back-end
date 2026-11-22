@@ -47,6 +47,7 @@ public class SecurityConfig {
                 .requestMatchers("/ws/**").permitAll()
                 .requestMatchers("/api/health").permitAll()
                 .requestMatchers("/actuator/health", "/actuator/health/**", "/actuator/info").permitAll()
+                .requestMatchers("/api/metricas/**").hasRole("ADMIN")
                 .requestMatchers(HttpMethod.GET, "/api/relatorios").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/arquivos/**").permitAll()
                 .requestMatchers(HttpMethod.GET, "/api/chat/mensagens/contagens").permitAll()

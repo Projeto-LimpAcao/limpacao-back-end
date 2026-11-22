@@ -2,8 +2,12 @@ package com.limpacao.entity;
 
 import java.time.LocalDateTime;
 
+import com.limpacao.enums.PerfilUsuario;
+
 import jakarta.persistence.Column;
 import jakarta.persistence.Entity;
+import jakarta.persistence.EnumType;
+import jakarta.persistence.Enumerated;
 import jakarta.persistence.GeneratedValue;
 import jakarta.persistence.GenerationType;
 import jakarta.persistence.Id;
@@ -43,6 +47,11 @@ public class Usuario {
     @Column(name = "modo_escuro", nullable = false)
     @Builder.Default
     private boolean modoEscuro = false;
+
+    @Enumerated(EnumType.STRING)
+    @Column(nullable = false, length = 20)
+    @Builder.Default
+    private PerfilUsuario perfil = PerfilUsuario.USUARIO;
 
     @Column(name = "criado_em")
     private LocalDateTime criadoEm;
