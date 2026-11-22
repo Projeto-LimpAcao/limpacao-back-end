@@ -7,12 +7,14 @@ import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
+import com.limpacao.config.ListaAdministradores;
 import com.limpacao.dto.AuthRequestDTO;
 import com.limpacao.dto.AuthResponseDTO;
 import com.limpacao.dto.RedefinirSenhaRequestDTO;
 import com.limpacao.dto.SolicitarRecuperacaoSenhaRequestDTO;
 import com.limpacao.dto.UsuarioRequestDTO;
 import com.limpacao.entity.Usuario;
+import com.limpacao.enums.PerfilUsuario;
 import com.limpacao.exception.CredenciaisInvalidasException;
 import com.limpacao.exception.RegraDeNegocioException;
 import com.limpacao.repository.UsuarioRepository;
@@ -31,6 +33,7 @@ public class AuthController {
     private final JwtService jwtService;
     private final PasswordEncoder passwordEncoder;
     private final RecuperacaoSenhaService recuperacaoSenhaService;
+    private final ListaAdministradores listaAdministradores;
 
     @PostMapping("/register")
     public ResponseEntity<AuthResponseDTO> register(@RequestBody @Valid UsuarioRequestDTO dto) {
@@ -42,12 +45,14 @@ public class AuthController {
                 .nome(dto.nome().trim())
                 .email(dto.email().trim())
                 .senha(passwordEncoder.encode(dto.senha()))
+                .perfil(listaAdministradores.ehAdmin(dto.email()) ? PerfilUsuario.ADMIN : PerfilUsuario.USUARIO)
                 .build();
 
         usuarioRepository.save(usuario);
 
-        String token = jwtService.gerarToken(usuario.getEmail());
-        return ResponseEntity.ok(new AuthResponseDTO(token, usuario.getEmail(), usuario.getNome()));
+        String token = jwtService.gerarToken(usuario.getEmail(), usuario.getPerfil());
+        return ResponseEntity.ok(new AuthResponseDTO(
+                token, usuario.getEmail(), usuario.getNome(), usuario.getPerfil()));
     }
 
     @PostMapping("/login")
@@ -59,8 +64,14 @@ public class AuthController {
             throw new CredenciaisInvalidasException("E-mail ou senha inválidos.");
         }
 
-        String token = jwtService.gerarToken(usuario.getEmail());
-        return ResponseEntity.ok(new AuthResponseDTO(token, usuario.getEmail(), usuario.getNome()));
+        if (usuario.getPerfil() != PerfilUsuario.ADMIN && listaAdministradores.ehAdmin(usuario.getEmail())) {
+            usuario.setPerfil(PerfilUsuario.ADMIN);
+            usuarioRepository.save(usuario);
+        }
+
+        String token = jwtService.gerarToken(usuario.getEmail(), usuario.getPerfil());
+        return ResponseEntity.ok(new AuthResponseDTO(
+                token, usuario.getEmail(), usuario.getNome(), usuario.getPerfil()));
     }
 
     @PostMapping("/esqueci-senha")
