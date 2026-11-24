@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -24,7 +25,8 @@ import com.limpacao.security.JwtService;
 @SpringBootTest(properties = {
         "spring.flyway.locations=classpath:db/migration",
         "management.endpoint.health.cache.time-to-live=0s",
-        "limpacao.admin.email="
+        "limpacao.admin.email=",
+        "limpacao.admin.emails=equipe.teste@limpacao.org"
 })
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
@@ -52,6 +54,22 @@ class HealthEndpointTest {
     private void simularBrasilApi(Health health) {
         when(brasilApi.health()).thenReturn(health);
         when(brasilApi.health(anyBoolean())).thenReturn(health);
+    }
+
+    @Value("${limpacao.mail.nome-remetente}")
+    private String nomeRemetente;
+
+    @Test
+    void propertiesComAcentoSaoLidosCorretamente() {
+        org.junit.jupiter.api.Assertions.assertEquals("LimpAção", nomeRemetente);
+    }
+
+    @Test
+    void infoMostraACommitEmExecucao() throws Exception {
+        mockMvc.perform(get("/actuator/info"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.app.nome").value("LimpAção API"))
+                .andExpect(jsonPath("$.app.commit").value("desconhecido"));
     }
 
     @Test
@@ -111,7 +129,7 @@ class HealthEndpointTest {
     void emailDaListaViraAdminAoSeCadastrar() throws Exception {
         mockMvc.perform(post("/api/auth/register")
                         .contentType(MediaType.APPLICATION_JSON)
-                        .content("{\"nome\":\"Equipe\",\"email\":\"limpacao.projeto@gmail.com\",\"senha\":\"Senha@123\"}"))
+                        .content("{\"nome\":\"Equipe\",\"email\":\"equipe.teste@limpacao.org\",\"senha\":\"Senha@123\"}"))
                 .andExpect(status().isOk())
                 .andExpect(jsonPath("$.perfil").value("ADMIN"));
 
