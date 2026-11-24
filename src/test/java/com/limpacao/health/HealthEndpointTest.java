@@ -10,6 +10,7 @@ import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.boot.health.contributor.Health;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.boot.webmvc.test.autoconfigure.AutoConfigureMockMvc;
@@ -52,6 +53,22 @@ class HealthEndpointTest {
     private void simularBrasilApi(Health health) {
         when(brasilApi.health()).thenReturn(health);
         when(brasilApi.health(anyBoolean())).thenReturn(health);
+    }
+
+    @Value("${limpacao.mail.nome-remetente}")
+    private String nomeRemetente;
+
+    @Test
+    void propertiesComAcentoSaoLidosCorretamente() {
+        org.junit.jupiter.api.Assertions.assertEquals("LimpAção", nomeRemetente);
+    }
+
+    @Test
+    void infoMostraACommitEmExecucao() throws Exception {
+        mockMvc.perform(get("/actuator/info"))
+                .andExpect(status().isOk())
+                .andExpect(jsonPath("$.app.nome").value("LimpAção API"))
+                .andExpect(jsonPath("$.app.commit").value("desconhecido"));
     }
 
     @Test

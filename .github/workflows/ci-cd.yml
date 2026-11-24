@@ -1,0 +1,179 @@
+# Pipeline de CI/CD do back-end.
+#
+# 1. testes        -> roda todos os testes (mvn verify).
+# 2. smoke-docker  -> builda a mesma imagem Docker que o Render usa, sobe com um
+#                     PostgreSQL de verdade e confere o health check.
+# 3. deploy        -> (só na main) dispara o deploy no Render pelo Deploy Hook,
+#                     espera a versão nova entrar no ar e valida o health check
+#                     em produção.
+#
+# Configuração no GitHub (Settings > Secrets and variables > Actions):
+#   Secret   RENDER_DEPLOY_HOOK_URL -> Render > serviço > Settings > Deploy Hook
+#   Variable RENDER_API_URL         -> URL pública da API, ex.: https://limpacao-api.onrender.com
+name: CI/CD
+
+on:
+  push:
+    branches: [main, develop]
+  pull_request:
+    branches: [main, develop]
+  workflow_dispatch:
+
+concurrency:
+  group: ci-cd-${{ github.ref }}
+  cancel-in-progress: false
+
+jobs:
+  testes:
+    name: Testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Instalar o Java 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+          cache: maven
+
+      - name: Rodar os testes
+        run: mvn -B verify
+
+      - name: Publicar relatório dos testes
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: relatorio-testes
+          path: target/surefire-reports
+          retention-days: 7
+
+  smoke-docker:
+    name: Smoke test da imagem Docker
+    needs: testes
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    services:
+      postgres:
+        image: postgres:16-alpine
+        env:
+          POSTGRES_DB: limpacao
+          POSTGRES_USER: postgres
+          POSTGRES_PASSWORD: postgres
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U postgres"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 10
+    steps:
+      - name: Baixar o código
+        uses: actions/checkout@v4
+
+      - name: Buildar a imagem (mesmo Dockerfile do Render)
+        run: docker build -t limpacao-api:ci .
+
+      - name: Subir a API
+        run: |
+          docker run -d --name api --network host \
+            -e PGHOST=localhost -e PGPORT=5432 -e PGDATABASE=limpacao \
+            -e PGUSER=postgres -e PGPASSWORD=postgres \
+            -e JWT_SECRET=segredo-somente-para-o-ci-com-mais-de-32-caracteres \
+            -e ADMIN_SENHA=SenhaCi#2026 \
+            -e RENDER_GIT_COMMIT=${{ github.sha }} \
+            limpacao-api:ci
+
+      - name: Esperar a API ficar pronta
+        run: |
+          for i in $(seq 1 60); do
+            if curl -fs http://localhost:8080/actuator/health/readiness | grep -q '"UP"'; then
+              echo "API pronta após ${i}x5s"; exit 0
+            fi
+            sleep 5
+          done
+          echo "A API não ficou pronta a tempo"; docker logs api; exit 1
+
+      - name: Conferir o health check
+        run: |
+          set -e
+          echo "liveness:";  curl -fs http://localhost:8080/actuator/health/liveness;  echo
+          echo "readiness:"; curl -fs http://localhost:8080/actuator/health/readiness; echo
+          echo "health:";    curl -fs http://localhost:8080/actuator/health;           echo
+          echo "info:";      curl -fs http://localhost:8080/actuator/info;             echo
+          curl -fs http://localhost:8080/actuator/info | grep -q '${{ github.sha }}'
+
+      - name: Conferir que a API responde
+        run: curl -fs http://localhost:8080/api/relatorios > /dev/null
+
+      - name: Conferir que o health completo exige administrador
+        run: |
+          TOKEN=$(curl -fs http://localhost:8080/api/auth/login \
+            -H 'Content-Type: application/json' \
+            -d '{"email":"limpacao.projeto@gmail.com","senha":"SenhaCi#2026"}' | jq -r .token)
+          curl -fs -H "Authorization: Bearer $TOKEN" http://localhost:8080/actuator/health | tee health.json
+          echo
+          jq -e '.components.db.status == "UP"' health.json
+          if curl -fs http://localhost:8080/actuator/health | jq -e '.components' > /dev/null; then
+            echo "Detalhes do health check expostos sem login!"; exit 1
+          fi
+
+      - name: Logs da API
+        if: always()
+        run: docker logs api
+
+  deploy:
+    name: Deploy no Render
+    needs: smoke-docker
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    environment:
+      name: producao
+      url: ${{ vars.RENDER_API_URL }}
+    steps:
+      - name: Conferir configuração
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+          API: ${{ vars.RENDER_API_URL }}
+        run: |
+          if [ -z "$HOOK" ] || [ -z "$API" ]; then
+            echo "::error::Configure o secret RENDER_DEPLOY_HOOK_URL e a variável RENDER_API_URL em Settings > Secrets and variables > Actions."
+            exit 1
+          fi
+
+      - name: Disparar o deploy no Render
+        env:
+          HOOK: ${{ secrets.RENDER_DEPLOY_HOOK_URL }}
+        run: curl -fsS -X POST "$HOOK" > /dev/null && echo "Deploy solicitado ao Render."
+
+      - name: Esperar a versão nova entrar no ar
+        env:
+          API: ${{ vars.RENDER_API_URL }}
+          COMMIT: ${{ github.sha }}
+        run: |
+          # O build no plano free do Render pode levar de 5 a 15 minutos.
+          for i in $(seq 1 100); do
+            ATUAL=$(curl -fs -m 30 "$API/actuator/info" | jq -r '.app.commit // empty' || true)
+            echo "Tentativa $i: versão no ar = ${ATUAL:-sem resposta}"
+            if [ "$ATUAL" = "$COMMIT" ]; then
+              echo "Versão $COMMIT no ar."; exit 0
+            fi
+            sleep 15
+          done
+          echo "::error::A versão $COMMIT não entrou no ar em 25 minutos. Veja os logs do deploy no Render."
+          exit 1
+
+      - name: Validar o health check em produção
+        env:
+          API: ${{ vars.RENDER_API_URL }}
+        run: |
+          set -e
+          curl -fsS "$API/actuator/health/readiness" | tee readiness.json; echo
+          jq -e '.status == "UP"' readiness.json
+          curl -fsS "$API/actuator/health" | tee health.json; echo
+          jq -e '.status == "UP" or .status == "DEGRADED"' health.json
+          curl -fsS -o /dev/null "$API/api/relatorios"
+          echo "Deploy validado."
