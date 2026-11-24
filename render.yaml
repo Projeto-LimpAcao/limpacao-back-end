@@ -16,7 +16,9 @@ services:
     region: oregon
     dockerfilePath: ./Dockerfile
     healthCheckPath: /actuator/health/readiness
-    autoDeploy: true
+    # O deploy e disparado pelo GitHub Actions (.github/workflows/ci-cd.yml)
+    # so depois que os testes passam. Por isso o auto-deploy do Render fica desligado.
+    autoDeploy: false
     envVars:
       - key: PGHOST
         fromDatabase:
